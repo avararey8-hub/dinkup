@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}{{ league.name }}{% endblock %}
+{% block content %}
+<div class="league-banner">
+  <div>
+    <a href="{% url 'dashboard' %}" class="back">‹ My leagues</a>
+    <h1>{{ league.name }}</h1>
+    <p>{{ league.get_event_type_display }} · {{ league.label }} · {{ league.get_partner_mode_display|cut:" (same doubles team all night)"|cut:" (play with everyone)" }}</p>
+  </div>
+  <div class="banner-codes">
+    <div><span>Join code</span><strong class="mono">{{ league.join_code }}</strong></div>
+    <div><span>Watch code</span><strong class="mono">{{ league.spectator_code }}</strong></div>
+  </div>
+</div>
+
+<nav class="tabs" role="tablist">
+  {% with t=tab %}
+  <a href="?tab=overview" class="{% if t == 'overview' %}on{% endif %}">Overview</a>
+  <a href="?tab=players" class="{% if t == 'players' %}on{% endif %}">Players <span class="count">{{ players|length }}</span></a>
+  <a href="?tab=schedule" class="{% if t == 'schedule' %}on{% endif %}">Schedule</a>
+  <a href="?tab=standings" class="{% if t == 'standings' %}on{% endif %}">Standings</a>
+  <a href="?tab=bracket" class="{% if t == 'bracket' %}on{% endif %}">Bracket</a>
+  <a href="?tab=share" class="{% if t == 'share' %}on{% endif %}">Share &amp; QR</a>
+  <a href="?tab=settings" class="{% if t == 'settings' %}on{% endif %}">Settings</a>
+  {% endwith %}
+</nav>
+
+{# ---------------- OVERVIEW ---------------- #}
+{% if tab == 'overview' %}
+  {% if unscheduled %}
+    <section class="card notice-card">
+      <h2>{{ unscheduled|length }} player{{ unscheduled|length|pluralize }} not on the schedule</h2>
+      <p class="small">{% for p in unscheduled %}{{ p.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        {% if league.is_teams %}(only full teams of 2 can be scheduled){% endif %}</p>
+      <p class="muted small">This keeps every score already entered. Games that haven't been played yet get re-planned so the new players are included.</p>
+      <form method="post" action="{% url 'league_action' league.pk 'update' %}">{% csrf_token %}
+        <button class="btn btn-lime">Add to schedule</button>
+      </form>
+    </section>
+  {% endif %}
+  <div class="steps">
+    <div class="step {% if players %}done{% endif %}">
+      <span class="num">1</span>
+      <div><h3>Add players</h3><p class="muted small">{{ players|length }} of {{ league.max_players }} added{% if league.is_teams %} · {{ teams|length }} team{{ teams|length|pluralize }}{% endif %}</p></div>
+      <a class="btn btn-ghost btn-sm" href="?tab=players">{% if players %}Manage{% else %}Add{% endif %}</a>
+    </div>
+    <div class="step {% if match_count %}done{% endif %}">
+      <span class="num">2</span>
+      <div><h3>Build the schedule</h3>
+        {% if preview %}
+          <p class="muted small">About <strong>{{ preview.rounds }} rounds</strong> · {{ preview.games }} games each · ~{{ preview.minutes }} min per night{% if preview.sitting %} · {{ preview.sitting }} sit out each round{% endif %}</p>
+        {% else %}
+          <p class="muted small">Needs at least 4 players{% if league.is_teams %} (2 full teams){% endif %}.</p>
+        {% endif %}
+      </div>
+      <form method="post" action="{% url 'league_action' league.pk 'generate' %}" class="gen-form">
+        {% csrf_token %}
+        {% if scored_count %}<label class="check small"><input type="checkbox" name="confirm" value="yes"> Yes, erase scores &amp; rebuild</label>{% endif %}
+        <button class="btn btn-lime btn-sm" {% if not preview %}disabled{% endif %}>{% if match_count %}Rebuild{% else %}Build it{% endif %}</button>
+      </form>
+    </div>
+    <div class="step">
+      <span class="num">3</span>
+      <div><h3>Share the codes</h3><p class="muted small">Players scan the QR code or type <span class="mono">{{ league.join_code }}</span>.</p></div>
+      <a class="btn btn-ghost btn-sm" href="?tab=share">Show QR</a>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat"><span>Games scheduled</span><strong>{{ match_count }}</strong></div>
+    <div class="stat"><span>Scores in</span><strong>{{ scored_count }}</strong></div>
+    <div class="stat"><span>Courts</span><strong>{{ league.num_courts }}</strong></div>
+    <div class="stat"><span>Weeks</span><strong>{{ league.num_weeks }}</strong></div>
+  </div>
+
+  <section class="card lock-card {% if league.scores_locked %}locked{% endif %}">
+    <div>
+      <h2>{% if league.scores_locked %}🔒 Scores are locked{% else %}🔓 Scores are open{% endif %}</h2>
+      <p class="muted small">{% if league.auto_lock %}Scores also lock automatically after each play night.{% else %}Auto-lock is off.{% endif %} Admins can always fix scores.</p>
+    </div>
+    <form method="post" action="{% url 'league_action' league.pk league.scores_locked|yesno:'unlock,lock' %}">
+      {% csrf_token %}
+      <button class="btn {% if league.scores_locked %}btn-ghost{% else %}btn-dark{% endif %}">{% if league.scores_locked %}Unlock scores{% else %}Lock scores now{% endif %}</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Ask Coach Dink</h2><a href="{% url 'assistant' league.pk %}" class="small">Open full chat ›</a></div>
+    <p class="muted small">Your AI helper. Try “Who's in first?” or “How long will tonight run?”</p>
+    <a class="btn btn-ghost" href="{% url 'assistant' league.pk %}">💬 Chat with Coach</a>
+  </section>
+{% endif %}
+
+{# ---------------- PLAYERS ---------------- #}
+{% if tab == 'players' %}
+  <section class="card">
+    <h2>Add players</h2>
+    <form method="post" action="{% url 'players_add' league.pk %}" class="form">
+      {% csrf_token %}
+      {{ player_form.names }}
+      <p class="hint">Players get a 4-digit PIN when they join so nobody else can use their name. If someone forgets theirs, it's listed below.</p>
+      <p class="hint">{% if league.is_teams %}Type partners on one line like <b>Sam Lee / Jo Park</b> to make a team. Single names can be paired later.{% else %}One name per line. Players can also join themselves with the join code.{% endif %}</p>
+      <button class="btn btn-lime">Add players</button>
+    </form>
+  </section>
+
+  {% if league.is_teams %}
+    <section class="card">
+      <div class="card-head"><h2>Teams ({{ teams|length }})</h2></div>
+      {% if teams %}
+        <ul class="list">
+          {% for t in teams %}
+            <li class="row">
+              <span><strong>{{ t.display }}</strong>{% if t.players.count < 2 %} <span class="pill pill-warn">needs partner</span>{% endif %}</span>
+              <form method="post" action="{% url 'team_split' league.pk t.pk %}">{% csrf_token %}<button class="linklike small">Split</button></form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="muted">No teams yet.</p>{% endif %}
+      {% if unpaired %}
+        <h3 class="mt">Needs a partner</h3>
+        <ul class="list">
+          {% for p in unpaired %}
+            <li class="row"><span>{{ p.name }}{% if p.self_joined %} <span class="pill pill-ghost">joined w/ code</span>{% endif %}</span>
+              <form method="post" action="{% url 'player_remove' league.pk p.pk %}">{% csrf_token %}<button class="linklike small">Remove</button></form></li>
+          {% endfor %}
+        </ul>
+        <form method="post" action="{% url 'pair_players' league.pk %}">{% csrf_token %}<button class="btn btn-ghost btn-sm">Pair them up randomly</button></form>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  <section class="card">
+    <h2>All players ({{ players|length }}/{{ league.max_players }})</h2>
+    {% if players %}
+      <ul class="list cols">
+        {% for p in players %}
+          <li class="row">
+            <span>{{ p.name }}
+              {% if p.pin %}<span class="pill pill-ghost mono">PIN {{ p.pin }}</span>{% else %}<span class="muted small">· not joined yet</span>{% endif %}
+            </span>
+            <span class="row-actions-inline">
+              {% if p.pin %}<form method="post" action="{% url 'player_reset_pin' league.pk p.pk %}" onsubmit="return confirm('Clear {{ p.name|escapejs }}\'s PIN?')">{% csrf_token %}<button class="linklike small">Reset PIN</button></form>{% endif %}
+              <form method="post" action="{% url 'player_remove' league.pk p.pk %}" onsubmit="return confirm('Remove {{ p.name|escapejs }}?')">{% csrf_token %}<button class="linklike small">Remove</button></form>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}<p class="muted">No players yet.</p>{% endif %}
+  </section>
+{% endif %}
+
+{# ---------------- SCHEDULE ---------------- #}
+{% if tab == 'schedule' %}
+  <section class="card">
+    <div class="card-head"><h2>Schedule</h2><span class="muted small">Tap a game to enter or fix a score</span></div>
+    {% include "leagues/_schedule.html" with editable=True %}
+  </section>
+{% endif %}
+
+{# ---------------- STANDINGS ---------------- #}
+{% if tab == 'standings' %}
+  <section class="card">
+    <h2>Round robin standings</h2>
+    {% include "leagues/_standings.html" %}
+  </section>
+{% endif %}
+
+{# ---------------- BRACKET ---------------- #}
+{% if tab == 'bracket' %}
+  <section class="card">
+    <h2>Playoff bracket</h2>
+    <p class="muted small">Round robin decides the seeds. Bracket games are win by 2.{% if not league.is_teams %} With rotating partners, the top players get paired up: #1 with the last qualifier, #2 with the second-to-last, and so on.{% endif %}</p>
+    <form method="post" action="{% url 'league_action' league.pk 'bracket' %}" class="form">
+      {% csrf_token %}
+      <div class="chips stack">{% for r in bracket_form.size %}{{ r.tag }}<label for="{{ r.id_for_label }}">{{ r.choice_label }}</label>{% endfor %}</div>
+      <button class="btn btn-lime">Create bracket from standings</button>
+    </form>
+  </section>
+  <section class="card">
+    {% include "leagues/_bracket.html" with editable=True %}
+  </section>
+{% endif %}
+
+{# ---------------- SHARE ---------------- #}
+{% if tab == 'share' %}
+  <div class="share-grid">
+    <section class="card qr-card">
+      <p class="eyebrow dark">Players</p>
+      <h2>Join the league</h2>
+      <img src="{% url 'qr_code' league.pk 'join' %}" alt="QR code to join {{ league.name }}" class="qr">
+      <div class="big-code mono">{{ league.join_code }}</div>
+      <button type="button" class="btn btn-ghost btn-sm" data-copy="{{ join_url }}">Copy link</button>
+    </section>
+    <section class="card qr-card watch">
+      <p class="eyebrow dark">Family &amp; friends</p>
+      <h2>Watch scores</h2>
+      <img src="{% url 'qr_code' league.pk 'watch' %}" alt="QR code to watch {{ league.name }}" class="qr">
+      <div class="big-code mono">{{ league.spectator_code }}</div>
+      <button type="button" class="btn btn-ghost btn-sm" data-copy="{{ watch_url }}">Copy link</button>
+    </section>
+  </div>
+  <p class="hint center">Spectators can see every score but can't change anything. Codes aren't case sensitive. <button class="linklike" onclick="window.print()">Print this page</button></p>
+  <form method="post" action="{% url 'league_action' league.pk 'new_codes' %}" class="center" onsubmit="return confirm('Make new codes? The old codes will stop working.')">
+    {% csrf_token %}<button class="linklike small">Make new codes</button>
+  </form>
+{% endif %}
+
+{# ---------------- SETTINGS ---------------- #}
+{% if tab == 'settings' %}
+  <section class="card">
+    <div class="card-head"><h2>League settings</h2><a class="btn btn-ghost btn-sm" href="{% url 'league_edit' league.pk %}">Edit</a></div>
+    <dl class="settings-list">
+      <div><dt>Players</dt><dd>{{ league.max_players }}</dd></div>
+      <div><dt>Courts</dt><dd>{{ league.num_courts }}</dd></div>
+      <div><dt>Games per player</dt><dd>{{ league.games_per_player|default:"Auto (play everyone)" }}</dd></div>
+      <div><dt>Game length</dt><dd>{{ league.game_minutes }} min · to {{ league.points_to_win }}</dd></div>
+      <div><dt>Win by 2</dt><dd>{% if league.win_by_two_always %}Every game{% else %}Bracket games only{% endif %}</dd></div>
+      <div><dt>Dates</dt><dd>{{ league.start_date|date:"M j" }}{% if league.num_weeks > 1 %} – {{ league.end_date|date:"M j" }} ({{ league.num_weeks }} weeks){% endif %} at {{ league.start_time|time:"g:i A" }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Co-admins</h2>
+    <p class="muted small">Co-admins have the same rights you do. They need a DinkUp admin account first.</p>
+    <ul class="list">
+      <li class="row"><span><strong>{{ league.owner.username }}</strong> <span class="pill">Owner</span></span></li>
+      {% for u in league.co_admins.all %}
+        <li class="row"><span>{{ u.username }} <span class="pill pill-ghost">Co-admin</span></span>
+          <form method="post" action="{% url 'coadmin_remove' league.pk u.pk %}">{% csrf_token %}<button class="linklike small">Remove</button></form></li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="{% url 'coadmin_add' league.pk %}" class="inline-form">
+      {% csrf_token %}{{ coadmin_form.username }}<button class="btn btn-lime btn-sm">Add</button>
+    </form>
+  </section>
+
+  <section class="card danger-zone">
+    <h2>Delete league</h2>
+    <p class="muted small">This removes all players, games, and scores. You can't undo it.</p>
+    <form method="post" action="{% url 'league_delete' league.pk %}">
+      {% csrf_token %}
+      <label class="check"><input type="checkbox" name="confirm" value="yes"> Yes, delete this league</label>
+      <button class="btn btn-dark btn-sm">Delete league</button>
+    </form>
+  </section>
+{% endif %}
+{% endblock %}

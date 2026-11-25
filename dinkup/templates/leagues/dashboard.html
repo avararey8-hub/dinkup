@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}My leagues{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow dark">Admin</p>
+    <h1>My leagues</h1>
+  </div>
+  <a class="btn btn-lime" href="{% url 'league_create' %}">+ New league</a>
+</div>
+
+{% if leagues %}
+  <div class="league-grid">
+    {% for l in leagues %}
+      <a class="league-card" href="{% url 'league_manage' l.pk %}">
+        <div class="lc-top">
+          <span class="pill">{{ l.get_event_type_display }}</span>
+          {% if l.owner_id != user.id %}<span class="pill pill-ghost">Co-admin</span>{% endif %}
+        </div>
+        <h3>{{ l.name }}</h3>
+        <p class="muted">{{ l.label }}</p>
+        <div class="lc-stats">
+          <span><strong>{{ l.players.count }}</strong> player{{ l.players.count|pluralize }}</span>
+          <span><strong>{{ l.num_courts }}</strong> court{{ l.num_courts|pluralize }}</span>
+          <span><strong>{{ l.num_weeks }}</strong> wk</span>
+        </div>
+        <p class="small muted">Starts {{ l.start_date|date:"D M j" }} · {{ l.start_time|time:"g:i A" }}</p>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card empty">
+    <h2>No leagues yet</h2>
+    <p class="muted">Create a league or tournament, add players, and DinkUp builds the schedule.</p>
+    <a class="btn btn-lime" href="{% url 'league_create' %}">Create your first league</a>
+  </div>
+{% endif %}
+{% endblock %}

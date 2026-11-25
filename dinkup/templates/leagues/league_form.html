@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{% if creating %}New league{% else %}Edit {{ league.name }}{% endif %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="eyebrow dark">{% if creating %}Step 1 of 3{% else %}Settings{% endif %}</p>
+    <h1>{% if creating %}Set up your league{% else %}Edit {{ league.name }}{% endif %}</h1>
+  </div>
+</div>
+
+<form method="post" class="form league-form" id="leagueForm">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+
+  <section class="card">
+    <h2>The basics</h2>
+    <label>League name {{ form.name }}{% for e in form.name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}</label>
+    <fieldset><legend>What are you running?</legend><div class="chips">{% for r in form.event_type %}{{ r.tag }}<label for="{{ r.id_for_label }}">{{ r.choice_label }}</label>{% endfor %}</div>
+      <p class="hint">Tournament games are always win by 2. League games just go to 11.</p></fieldset>
+    <fieldset><legend>Level</legend><div class="chips">{% for r in form.level %}{{ r.tag }}<label for="{{ r.id_for_label }}">{{ r.choice_label }}</label>{% endfor %}</div></fieldset>
+    <fieldset><legend>Division</legend><div class="chips">{% for r in form.division %}{{ r.tag }}<label for="{{ r.id_for_label }}">{{ r.choice_label }}</label>{% endfor %}</div>
+      <p class="hint">Scramble = everyone rotates partners and plays with everyone.</p></fieldset>
+    <fieldset id="partnerField"><legend>Partners</legend><div class="chips stack">{% for r in form.partner_mode %}{{ r.tag }}<label for="{{ r.id_for_label }}">{{ r.choice_label }}</label>{% endfor %}</div></fieldset>
+  </section>
+
+  <section class="card">
+    <h2>Players, courts &amp; games</h2>
+    <div class="grid-2">
+      <label>{{ form.max_players.label }} {{ form.max_players }}{% for e in form.max_players.errors %}<span class="form-error">{{ e }}</span>{% endfor %}</label>
+      <label>{{ form.num_courts.label }} <small class="muted">(max 8)</small> {{ form.num_courts }}{% for e in form.num_courts.errors %}<span class="form-error">{{ e }}</span>{% endfor %}</label>
+      <label>{{ form.games_per_player.label }} {{ form.games_per_player }}<span class="hint">{{ form.games_per_player.help_text }}</span>{% for e in form.games_per_player.errors %}<span class="form-error">{{ e }}</span>{% endfor %}</label>
+      <label>{{ form.points_to_win.label }} {{ form.points_to_win }}{% for e in form.points_to_win.errors %}<span class="form-error">{{ e }}</span>{% endfor %}</label>
+    </div>
+    <div class="estimate" id="estimate" aria-live="polite"></div>
+  </section>
+
+  <section class="card">
+    <h2>When &amp; how long</h2>
+    <div class="grid-2">
+      <label>{{ form.start_date.label }} {{ form.start_date }}{% for e in form.start_date.errors %}<span class="form-error">{{ e }}</span>{% endfor %}</label>
+      <label>{{ form.start_time.label }} {{ form.start_time }}</label>
+      <label>{{ form.num_weeks.label }} {{ form.num_weeks }}<span class="hint">{{ form.num_weeks.help_text }}</span></label>
+      <label>{{ form.game_minutes.label }} {{ form.game_minutes }}</label>
+    </div>
+    <label class="check">{{ form.auto_lock }} <span>{{ form.auto_lock.label }}</span></label>
+  </section>
+
+  <div class="form-actions">
+    {% if not creating %}<a class="btn btn-ghost" href="{% url 'league_manage' league.pk %}">Cancel</a>{% endif %}
+    <button class="btn btn-lime">{% if creating %}Create league{% else %}Save settings{% endif %}</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}<script>DinkUp.leagueForm();</script>{% endblock %}

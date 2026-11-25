@@ -1,0 +1,48 @@
+{# Expects: schedule (list of rounds), league, optional editable (admin), optional weeks #}
+{% if schedule %}
+  {% if weeks|length > 1 %}
+    <div class="week-tabs" data-weektabs>
+      {% for w in weeks %}<button type="button" data-week="{{ w }}" class="{% if forloop.first %}on{% endif %}">Week {{ w }}</button>{% endfor %}
+    </div>
+  {% endif %}
+  {% for rnd in schedule %}
+    <section class="round" data-week="{{ rnd.week }}" {% if weeks|length > 1 and rnd.week != 1 %}hidden{% endif %}>
+      <header class="round-head">
+        <h3>Round {{ rnd.round }}</h3>
+        <span class="muted small">{{ rnd.date|date:"D M j" }} · {{ rnd.time|time:"g:i A" }}</span>
+      </header>
+      <div class="matches">
+        {% for m in rnd.matches %}
+          <article class="match {% if m.is_complete %}done{% endif %}">
+            <div class="court-tag">Court {{ m.court }}</div>
+            <div class="sides">
+              <div class="side {% if m.winner == 'a' %}win{% endif %}"><span>{{ m.side_a_names }}</span><b>{{ m.score_a|default_if_none:"–" }}</b></div>
+              <div class="side {% if m.winner == 'b' %}win{% endif %}"><span>{{ m.side_b_names }}</span><b>{{ m.score_b|default_if_none:"–" }}</b></div>
+            </div>
+            {% if editable %}
+              <details class="admin-score">
+                <summary>{% if m.is_complete %}Edit score{% else %}Enter score{% endif %}</summary>
+                <form method="post" action="{% url 'submit_score' m.id %}" class="score-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <div class="score-row">
+                    <input type="number" name="score_a" min="0" max="99" inputmode="numeric" value="{{ m.score_a|default_if_none:'' }}" aria-label="{{ m.side_a_names }} score">
+                    <span>–</span>
+                    <input type="number" name="score_b" min="0" max="99" inputmode="numeric" value="{{ m.score_b|default_if_none:'' }}" aria-label="{{ m.side_b_names }} score">
+                  </div>
+                  <label class="check small"><input type="checkbox" name="confirm" required> Yes, this score is correct</label>
+                  <div class="row-actions">
+                    <button class="btn btn-lime btn-sm">Save</button>
+                    {% if m.is_complete %}<button class="btn btn-ghost btn-sm" name="clear" value="1" formnovalidate>Clear</button>{% endif %}
+                  </div>
+                </form>
+              </details>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+{% else %}
+  <p class="muted">No schedule yet.</p>
+{% endif %}

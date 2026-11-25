@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block body_class %}page-home{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-court" aria-hidden="true"><span class="kitchen"></span><span class="net"></span><span class="kitchen two"></span></div>
+  <div class="hero-text">
+    <p class="eyebrow">Waco pickleball leagues & tournaments</p>
+    <h1>Get on the court<br><span class="hl">faster.</span></h1>
+    <p class="lede">Find your court, see who you're playing, and enter your score in seconds.</p>
+  </div>
+</section>
+
+<section class="card code-card" id="code">
+  <h2>Have a code?</h2>
+  <p class="muted small">Players use the league code. Family &amp; friends use the WATCH code. Upper or lower case both work.</p>
+  <form method="get" action="{% url 'home' %}" class="code-form">
+    <input type="text" name="code" class="code-input" placeholder="Enter code" autocapitalize="characters"
+           autocomplete="off" aria-label="League or watch code" required>
+    <button class="btn btn-lime">Go</button>
+  </form>
+</section>
+
+{% if my_leagues %}
+<section class="card">
+  <h2>Your leagues</h2>
+  <ul class="list">
+    {% for l in my_leagues %}
+      <li><a class="row-link" href="{% url 'player_home' l.pk %}"><strong>{{ l.name }}</strong><span class="muted small">{{ l.label }}</span><span class="chev">›</span></a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="feature-grid">
+  <a class="feature" href="#code" data-code-hint="Enter your league code"><span class="feat-ico">🏓</span><h3>Fair matchups</h3><p>Everyone plays everyone, across up to 8 courts.</p><span class="feat-go">Join with your code ›</span></a>
+  <a class="feature" href="#code" data-code-hint="Enter your league code"><span class="feat-ico">📱</span><h3>Scores from your phone</h3><p>Enter your own score. It locks after the night is over.</p><span class="feat-go">See my games ›</span></a>
+  <a class="feature" href="#code" data-code-hint="Enter the WATCH code (starts with WATCH)"><span class="feat-ico">👀</span><h3>Watch live</h3><p>Spectators can follow every score but can't change anything.</p><span class="feat-go">Enter a WATCH code ›</span></a>
+  <a class="feature" href="#code" data-code-hint="Enter your league or WATCH code"><span class="feat-ico">💬</span><h3>Ask Coach Dink</h3><p>The AI helper knows your next court, partner, and the standings.</p><span class="feat-go">Open Coach Dink ›</span></a>
+</section>
+
+<p class="center muted small">Running a league? <a href="{% url 'login' %}">Admin login</a> · <a href="{% url 'signup' %}">Create an admin account</a></p>
+{% endblock %}

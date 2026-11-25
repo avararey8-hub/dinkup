@@ -1,0 +1,25 @@
+{% if table %}
+<div class="table-wrap">
+  <table class="standings">
+    <thead>
+      <tr><th>#</th><th class="left">{% if league.is_teams %}Team{% else %}Player{% endif %}</th><th>W</th><th>L</th><th class="hide-sm">PF</th><th>PA</th><th>+/-</th></tr>
+    </thead>
+    <tbody>
+      {% for r in table %}
+        <tr class="{% if highlight and highlight in r.player_ids %}me{% endif %}{% if forloop.first and r.gp %} leader{% endif %}">
+          <td class="rank">{{ r.rank }}</td>
+          <td class="left name">{{ r.name }}</td>
+          <td class="w">{{ r.w }}</td>
+          <td>{{ r.l }}</td>
+          <td class="hide-sm">{{ r.pf }}</td>
+          <td>{{ r.pa }}</td>
+          <td class="{% if r.diff > 0 %}pos{% elif r.diff < 0 %}neg{% endif %}">{% if r.diff > 0 %}+{% endif %}{{ r.diff }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="hint">W = wins · L = losses · PF = points scored · PA = total points lost · +/- = point difference (tiebreaker)</p>
+{% else %}
+  <p class="muted">Standings show up once players are added.</p>
+{% endif %}

@@ -1,0 +1,13 @@
+{# Bottom tab bar for players/spectators on phones #}
+<nav class="bottomnav">
+  {% if player %}
+    <a href="{% url 'player_home' league.pk %}" class="{% if active == 'games' %}on{% endif %}">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h18M12 4v16"/></svg>My games</a>
+  {% endif %}
+  <a href="{% url 'board' league.pk %}?tab=standings" class="{% if active == 'standings' %}on{% endif %}">
+    <svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Standings</a>
+  <a href="{% url 'board' league.pk %}?tab=schedule" class="{% if active == 'schedule' %}on{% endif %}">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Schedule</a>
+  <a href="{% url 'assistant' league.pk %}" class="{% if active == 'coach' %}on{% endif %}">
+    <svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>Ask Coach</a>
+</nav>

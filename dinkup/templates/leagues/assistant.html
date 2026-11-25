@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Coach Dink · {{ league.name }}{% endblock %}
+{% block body_class %}has-bottomnav page-chat{% endblock %}
+{% block content %}
+<div class="chat-shell">
+  <header class="chat-head">
+    <div class="coach-avatar" aria-hidden="true"><span class="ball"><i></i><i></i><i></i><i></i><i></i></span></div>
+    <div>
+      <h1>Coach Dink</h1>
+      <p class="small">{{ league.name }} · {% if ai_on %}AI powered{% else %}Built-in helper{% endif %}</p>
+    </div>
+    {% if is_admin %}<a href="{% url 'league_manage' league.pk %}" class="small back-link">Admin ›</a>{% endif %}
+  </header>
+
+  <div class="chat-log" id="chatLog" aria-live="polite">
+    <div class="msg bot">Hi{% if player %} {{ player.name }}{% endif %}! I know this league's schedule, courts, and standings. What do you want to know?</div>
+  </div>
+
+  <div class="suggestions" id="suggestions">
+    {% if player %}
+      <button type="button">When do I play next?</button>
+      <button type="button">Who's my partner?</button>
+      <button type="button">What's my record?</button>
+    {% endif %}
+    <button type="button">Who's in first?</button>
+    <button type="button">What are the rules?</button>
+    <button type="button">How long will it run?</button>
+  </div>
+
+  <form class="chat-form" id="chatForm" data-url="{% url 'assistant_ask' league.pk %}">
+    {% csrf_token %}
+    <input type="text" id="chatInput" placeholder="Ask Coach Dink…" autocomplete="off" aria-label="Message" maxlength="500">
+    <button class="btn btn-lime" aria-label="Send">Send</button>
+  </form>
+</div>
+{% endblock %}
+{% block bottomnav %}{% if player or not is_admin %}{% include "leagues/_league_nav.html" with active="coach" %}{% endif %}{% endblock %}
+{% block scripts %}<script>DinkUp.chat();</script>{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Watch {{ league.name }}{% endblock %}
+{% block head %}<meta http-equiv="refresh" content="45">{% endblock %}
+{% block body_class %}has-bottomnav{% endblock %}
+{% block content %}
+<div class="watch-banner">
+  <span class="live-dot"></span> Spectator view · updates automatically
+</div>
+<div class="player-head">
+  <div>
+    <p class="eyebrow dark">{{ league.label }}</p>
+    <h1>{{ league.name }}</h1>
+  </div>
+</div>
+
+{% if champion %}<div class="champion">🏆 <span>Champions</span><strong>{{ champion }}</strong></div>{% endif %}
+
+<nav class="seg">
+  <a href="?tab=scores" class="{% if tab == 'scores' %}on{% endif %}">Scores</a>
+  <a href="?tab=standings" class="{% if tab == 'standings' %}on{% endif %}">Standings</a>
+  {% if bracket %}<a href="?tab=bracket" class="{% if tab == 'bracket' %}on{% endif %}">Bracket</a>{% endif %}
+</nav>
+
+<section class="card">
+  {% if tab == 'standings' %}
+    {% include "leagues/_standings.html" %}
+  {% elif tab == 'bracket' %}
+    {% include "leagues/_bracket.html" %}
+  {% else %}
+    {% include "leagues/_schedule.html" %}
+  {% endif %}
+</section>
+<p class="hint center">You're watching. Scores can only be entered by players and admins.</p>
+{% endblock %}
+{% block bottomnav %}
+<nav class="bottomnav">
+  <a href="?tab=scores" class="{% if tab == 'scores' %}on{% endif %}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Scores</a>
+  <a href="?tab=standings" class="{% if tab == 'standings' %}on{% endif %}"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Standings</a>
+  <a href="{% url 'assistant' league.pk %}"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>Ask Coach</a>
+</nav>
+{% endblock %}

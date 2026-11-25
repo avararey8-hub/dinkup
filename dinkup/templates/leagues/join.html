@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Join {{ league.name }}{% endblock %}
+{% block content %}
+<section class="card narrow join-card">
+  <p class="eyebrow dark">{{ league.label }}</p>
+  <h1>Join {{ league.name }}</h1>
+  <p class="muted small">{{ league.get_event_type_display }} · starts {{ league.start_date|date:"D M j" }} at {{ league.start_time|time:"g:i A" }}</p>
+
+  <form method="post" class="form">
+    {% csrf_token %}
+    <label>{{ form.name.label }}
+      <input type="text" name="name" list="roster" required autocomplete="name" placeholder="Start typing your name" value="{{ form.name.value|default_if_none:'' }}">
+      {% for e in form.name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+    </label>
+    {% if roster %}
+      <datalist id="roster">{% for p in roster %}<option value="{{ p.name }}">{% endfor %}</datalist>
+      <p class="hint">Already on the list? Pick your name so your games show up.</p>
+    {% endif %}
+    {% if league.is_teams %}
+      <label>{{ form.partner_name.label }} <small class="muted">(optional)</small>
+        <input type="text" name="partner_name" list="roster" placeholder="Who are you playing with?">
+      </label>
+    {% endif %}
+    <details class="pin-box" {% if ask_pin %}open{% endif %}>
+      <summary>Joined before on another phone? Enter your PIN</summary>
+      <label>{{ form.pin.label }}
+        <input type="text" name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"
+               placeholder="4 digits" class="pin-input" {% if ask_pin %}autofocus{% endif %}>
+        {% for e in form.pin.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      </label>
+    </details>
+    <button class="btn btn-lime btn-block">Let's play</button>
+  </form>
+  <p class="small center muted">Just watching? Ask for the WATCH code instead.</p>
+</section>
+{% endblock %}

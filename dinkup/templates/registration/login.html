@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Admin login{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Admin login</h1>
+  <p class="muted">For league directors and co-admins. Players don't need an account — they just use the league code.</p>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-error">Username or password didn't match.</div>{% endif %}
+    <label>Username {{ form.username }}</label>
+    <label>Password {{ form.password }}</label>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="btn btn-lime btn-block">Log in</button>
+  </form>
+  <p class="small center">New admin? <a href="{% url 'signup' %}">Create an account</a></p>
+</section>
+{% endblock %}

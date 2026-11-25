@@ -1,0 +1,37 @@
+{% if bracket %}
+  {% if champion %}<div class="champion">🏆 <span>Champions</span><strong>{{ champion }}</strong></div>{% endif %}
+  <div class="bracket">
+    {% for r in bracket %}
+      <div class="b-round">
+        <h4>{{ r.name }}</h4>
+        {% for m in r.matches %}
+          <article class="match bracket-match {% if m.is_complete %}done{% endif %}">
+            <div class="court-tag">Court {{ m.court }} · win by 2</div>
+            <div class="sides">
+              <div class="side {% if m.winner == 'a' %}win{% endif %}"><span>{{ m.side_a_names }}</span><b>{{ m.score_a|default_if_none:"–" }}</b></div>
+              <div class="side {% if m.winner == 'b' %}win{% endif %}"><span>{{ m.side_b_names }}</span><b>{{ m.score_b|default_if_none:"–" }}</b></div>
+            </div>
+            {% if editable %}
+              <details class="admin-score">
+                <summary>{% if m.is_complete %}Edit score{% else %}Enter score{% endif %}</summary>
+                <form method="post" action="{% url 'submit_score' m.id %}" class="score-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <div class="score-row">
+                    <input type="number" name="score_a" min="0" max="99" inputmode="numeric" value="{{ m.score_a|default_if_none:'' }}">
+                    <span>–</span>
+                    <input type="number" name="score_b" min="0" max="99" inputmode="numeric" value="{{ m.score_b|default_if_none:'' }}">
+                  </div>
+                  <label class="check small"><input type="checkbox" name="confirm" required> Yes, this score is correct</label>
+                  <button class="btn btn-lime btn-sm">Save</button>
+                </form>
+              </details>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">The bracket starts after round robin. Top finishers advance.</p>
+{% endif %}

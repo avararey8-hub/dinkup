@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ league.name }}{% endblock %}
+{% block body_class %}has-bottomnav{% endblock %}
+{% block content %}
+<div class="player-head">
+  <div>
+    <p class="eyebrow dark">{{ league.label }}</p>
+    <h1>{{ league.name }}</h1>
+  </div>
+  {% if is_admin %}<a class="btn btn-ghost btn-sm" href="{% url 'league_manage' league.pk %}">Admin view</a>{% endif %}
+</div>
+
+<nav class="seg">
+  <a href="?tab=standings" class="{% if tab == 'standings' %}on{% endif %}">Standings</a>
+  <a href="?tab=schedule" class="{% if tab == 'schedule' %}on{% endif %}">Schedule</a>
+  {% if bracket %}<a href="?tab=bracket" class="{% if tab == 'bracket' %}on{% endif %}">Bracket</a>{% endif %}
+</nav>
+
+<section class="card">
+  {% if tab == 'schedule' %}
+    {% include "leagues/_schedule.html" %}
+  {% elif tab == 'bracket' %}
+    {% include "leagues/_bracket.html" %}
+  {% else %}
+    {% include "leagues/_standings.html" with highlight=player.id %}
+  {% endif %}
+</section>
+{% endblock %}
+{% block bottomnav %}{% include "leagues/_league_nav.html" with active=tab %}{% endblock %}

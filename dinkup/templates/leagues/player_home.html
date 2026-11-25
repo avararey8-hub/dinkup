@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}My games · {{ league.name }}{% endblock %}
+{% block body_class %}has-bottomnav{% endblock %}
+{% block content %}
+<div class="player-head">
+  <div>
+    <p class="eyebrow dark">{{ league.name }}</p>
+    <h1>Hi, {{ player.name }}</h1>
+  </div>
+  {% if my_row %}
+    <div class="record">
+      <strong>{{ my_row.w }}–{{ my_row.l }}</strong>
+      <span>#{{ my_row.rank }} of {{ table_size }}</span>
+    </div>
+  {% endif %}
+</div>
+
+{% if show_pin %}
+  <section class="card pin-card">
+    <p class="eyebrow dark">Save this</p>
+    <h2>Your PIN is <span class="mono pin-big">{{ player.pin }}</span></h2>
+    <p class="muted small">You'll need it if you sign in on another phone. Take a screenshot so you don't forget.</p>
+  </section>
+{% endif %}
+
+{% if up_next %}
+  <section class="next-card">
+    <div class="next-top">
+      <span class="eyebrow">Up next</span>
+      <span class="next-when">{{ up_next.play_date|date:"D M j" }} · {{ up_next.start_time|time:"g:i A" }}</span>
+    </div>
+    <div class="next-court">
+      <span>Court</span><strong>{{ up_next.court }}</strong>
+      <em>{% if up_next.stage == 'bracket' %}Bracket{% else %}Round {{ up_next.round_number }}{% endif %}</em>
+    </div>
+    <div class="next-vs">
+      <div><small>You + partner</small><b>{{ player.name }}{% if up_next.partner %} &amp; {{ up_next.partner.name }}{% endif %}</b></div>
+      <span class="vs">vs</span>
+      <div><small>Opponents</small><b>{% for o in up_next.opponents %}{{ o.name }}{% if not forloop.last %} &amp; {% endif %}{% endfor %}</b></div>
+    </div>
+  </section>
+{% elif matches %}
+  <section class="card center"><h2>🎉 All done!</h2><p class="muted">You've played every scheduled game.</p></section>
+{% else %}
+  <section class="card center"><h2>You're in!</h2><p class="muted">Your games will show up here once the admin builds the schedule.</p></section>
+{% endif %}
+
+{% if matches %}
+<h2 class="section-title">My games</h2>
+<div class="my-games">
+  {% for m in matches %}
+    {% ifchanged m.week m.stage %}<h3 class="week-label">{% if m.stage == 'bracket' %}Bracket{% else %}Week {{ m.week }} · {{ m.play_date|date:"D M j" }}{% endif %}</h3>{% endifchanged %}
+    <article class="my-game {% if m.is_complete %}{% if m.won %}won{% else %}lost{% endif %}{% endif %}">
+      <div class="mg-meta">
+        <span class="mg-round">{% if m.stage == 'bracket' %}Bracket{% else %}R{{ m.round_number }}{% endif %}</span>
+        <span class="mg-court">Court {{ m.court }}</span>
+        <span class="mg-time">{{ m.start_time|time:"g:i" }}</span>
+      </div>
+      <div class="mg-body">
+        <p class="mg-line"><span class="muted small">With</span> {{ m.partner.name|default:"—" }}</p>
+        <p class="mg-line"><span class="muted small">vs</span> {% for o in m.opponents %}{{ o.name }}{% if not forloop.last %} &amp; {% endif %}{% endfor %}</p>
+      </div>
+      {% if m.is_complete %}
+        <div class="mg-score">
+          <span class="result">{% if m.won %}W{% else %}L{% endif %}</span>
+          <b>{{ m.my_score }}–{{ m.their_score }}</b>
+          {% if not m.locked %}<button type="button" class="linklike small" data-toggle="#sf{{ m.id }}">Fix</button>{% endif %}
+        </div>
+      {% elif m.locked %}
+        <div class="mg-score"><span class="muted small">🔒 Locked</span></div>
+      {% else %}
+        <button type="button" class="btn btn-lime btn-sm" data-toggle="#sf{{ m.id }}">Enter score</button>
+      {% endif %}
+
+      {% if not m.locked %}
+      <form method="post" action="{% url 'submit_score' m.id %}" class="score-form player-score" id="sf{{ m.id }}" hidden>
+        {% csrf_token %}
+        <input type="hidden" name="perspective" value="mine">
+        <div class="score-row">
+          <label><span>Us</span><input type="number" name="score_a" min="0" max="99" inputmode="numeric" required value="{{ m.my_score|default_if_none:'' }}"></label>
+          <span class="dash">–</span>
+          <label><span>Them</span><input type="number" name="score_b" min="0" max="99" inputmode="numeric" required value="{{ m.their_score|default_if_none:'' }}"></label>
+        </div>
+        <div class="quick">
+          <button type="button" class="chip-btn" data-win="{{ league.points_to_win }}">We won ({{ league.points_to_win }})</button>
+          <button type="button" class="chip-btn" data-lose="{{ league.points_to_win }}">They won ({{ league.points_to_win }})</button>
+        </div>
+        <p class="hint">{% if m.win_by_two %}Win by 2 for this game.{% else %}Game ends at {{ league.points_to_win }}, no win-by-2.{% endif %}</p>
+        <label class="check"><input type="checkbox" name="confirm" required> Yes, this score is correct</label>
+        <button class="btn btn-lime btn-block">Save score</button>
+      </form>
+      {% endif %}
+    </article>
+  {% endfor %}
+</div>
+{% endif %}
+
+<p class="center small muted mt">Your PIN: <span class="mono">{{ player.pin }}</span> · Not {{ player.name }}? <a href="{% url 'player_leave' league.pk %}">Switch player</a></p>
+{% endblock %}
+{% block bottomnav %}{% include "leagues/_league_nav.html" with active="games" %}{% endblock %}
